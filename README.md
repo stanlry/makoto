@@ -7,13 +7,13 @@ Simple migration tool for PostgreSQL
 Install makoto CLI
 
 ```bash
-go get -u github.com/cororoGrap/makoto/cmd/makoto
+go get -u github.com/stanlry/makoto/cmd/makoto
 ```
 
 Install makoto migrator
 
 ```bash
-go get github.com/cororoGrap/makoto
+go get github.com/stanlry/makoto
 ```
 
 ## Structure
@@ -95,7 +95,7 @@ First generate the collection file with CLI.
 Initialize the makoto migrator
 
 ```go
-migrator := makoto.New(db, "postgres") // pass the DB pointer and DB driver name
+migrator := makoto.New(db) // pass the DB pointer
 ```
 
 Pass the migration collection to migrator
@@ -109,15 +109,15 @@ Perform migration
 ```go
 migrator.Up() // migrate to latest version
 // or
-migrator.EnsureSchema("v10") // migrate to a given version
+migrator.EnsureSchema(202201011233) // migrate to a given version
 ```
 
 #### Example
 
 ```go
 func startMigration(db *sql.DB) {
-    migrator := makoto.New(db, "postgres")
-    migrator.SetCollection(migration.GetCollection())
-    migrator.EnsureSchema("V2")
+    migrator := makoto.New(db)
+    migrator.SetEmbedCollection(migration.Content)
+    migrator.EnsureSchema(202201011233)
 }
 ```

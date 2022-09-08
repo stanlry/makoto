@@ -16,8 +16,6 @@ import (
 	cli "gopkg.in/urfave/cli.v1"
 )
 
-const version = "0.0.2"
-
 var (
 	database   string
 	configPath string
@@ -27,7 +25,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "makoto"
-	app.Version = version
+	app.Version = makoto.VERSION
 	app.Usage = "minimalist migration tool for PostgreSQL"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -44,7 +42,7 @@ func main() {
 		{
 			Name: "version",
 			Action: func(c *cli.Context) error {
-				fmt.Println("makoto version: ", version)
+				fmt.Println("makoto version: ", makoto.VERSION)
 				return nil
 			},
 		},
@@ -95,6 +93,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				configureDBUri()
 				db := db.ConnectPostgres(database)
+				defer db.Close()
 				r, err := makoto.GetAllRecords(db)
 				if err != nil {
 					panic(err)
@@ -120,6 +119,7 @@ func main() {
 			Action: func(c *cli.Context) error {
 				configureDBUri()
 				db := db.ConnectPostgres(database)
+				defer db.Close()
 				collection := processMigrationCollection(getMigrationDir())
 				migrator := makoto.GetMigrator(db, collection)
 

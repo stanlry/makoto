@@ -1,16 +1,28 @@
 package makoto
 
 import (
+	"database/sql"
 	"errors"
-
-	"github.com/jmoiron/sqlx"
 )
 
 var (
 	ErrRecordNotFound = errors.New("record not found")
 )
 
-func createSchemaVersionTable(db *sqlx.DB) error {
+const (
+	_sqlFind = `
+SELECT 
+	id,
+	version,
+	filename,
+	checksum,
+	statement,
+	created_at
+FROM schema_version
+`
+)
+
+func createSchemaVersionTable(db *sql.DB) error {
 	sql := `
 	CREATE TABLE IF NOT EXISTS schema_version (
 		id serial PRIMARY KEY,
@@ -21,9 +33,19 @@ func createSchemaVersionTable(db *sqlx.DB) error {
 		created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 	)
 	`
-	tx := db.MustBegin()
-	_, err := tx.Exec(sql)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
+	stmt, err := tx.Prepare(sql)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -31,17 +53,18 @@ func createSchemaVersionTable(db *sqlx.DB) error {
 	return tx.Commit()
 }
 
-func addRecord(tx *sqlx.Tx, version int, filename, checksum, statement string) error {
+func addRecord(tx *sql.Tx, version int, filename, checksum, statement string) error {
 	sql := `
 	INSERT INTO schema_version (version, filename, checksum, statement) 
-	VALUES (:version, :filename, :checksum, :statement)
+	VALUES (?, ?, ?, ?)
 	`
-	_, err := tx.NamedExec(sql, map[string]interface{}{
-		"version":   version,
-		"filename":  filename,
-		"checksum":  checksum,
-		"statement": statement,
-	})
+	stmt, err := tx.Prepare(sql)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(version, filename, checksum, statement)
 	if err != nil {
 		return err
 	}
@@ -49,20 +72,20 @@ func addRecord(tx *sqlx.Tx, version int, filename, checksum, statement string) e
 	return nil
 }
 
-func getLastRecord(db *sqlx.DB) (*MigrationRecord, error) {
-	sql := `
-	SELECT * FROM schema_version
-	ORDER by id desc
-	LIMIT 1
+func getLastRecord(db *sql.DB) (*MigrationRecord, error) {
+	query := _sqlFind + `
+ORDER by id desc
+LIMIT 1
 	`
-	row, err := db.Queryx(sql)
+	row, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
+	defer row.Close()
 
 	record := MigrationRecord{}
 	if row.Next() {
-		err = row.StructScan(&record)
+		err = row.Scan(&record.ID, &record.Version, &record.Filename, &record.Checksum, &record.Statement, &record.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -71,24 +94,21 @@ func getLastRecord(db *sqlx.DB) (*MigrationRecord, error) {
 	return nil, ErrRecordNotFound
 }
 
-func GetAllRecords(db *sqlx.DB) ([]MigrationRecord, error) {
-	sql := `
-	SELECT * FROM schema_version
-	`
-	tx := db.MustBegin()
-	rows, err := tx.Queryx(sql)
+func GetAllRecords(db *sql.DB) ([]MigrationRecord, error) {
+	rows, err := db.Query(_sqlFind)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	records := []MigrationRecord{}
 	for rows.Next() {
 		record := MigrationRecord{}
-		err = rows.StructScan(&record)
+		err = rows.Scan(&record.ID, &record.Version, &record.Filename, &record.Checksum, &record.Statement, &record.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
 		records = append(records, record)
 	}
-	return records, tx.Commit()
+	return records, nil
 }

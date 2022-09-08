@@ -1,12 +1,13 @@
 package db
 
 import (
-	"github.com/jmoiron/sqlx"
+	"database/sql"
+
 	_ "github.com/lib/pq"
 )
 
-func ConnectPostgres(uri string) *sqlx.DB {
-	con, err := sqlx.Connect("postgres", uri)
+func ConnectPostgres(uri string) *sql.DB {
+	con, err := sql.Open("postgres", uri)
 	if err != nil {
 		panic(err)
 	}

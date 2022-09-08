@@ -9,6 +9,7 @@ type MigrationRecord struct {
 	Version   int
 	Filename  string
 	Checksum  string
+	Statement string
 	CreatedAt time.Time `db:"created_at"`
 }
 
@@ -42,6 +43,10 @@ func (m *migrationItem) Previous() *migrationItem {
 
 type MigrationCollection struct {
 	head *migrationItem
+}
+
+func (m *MigrationCollection) Reset() {
+	m.head = nil
 }
 
 func (m *MigrationCollection) Head() *migrationItem {
