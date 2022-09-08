@@ -20,7 +20,7 @@ func processMigrationCollection(path string) *makoto.MigrationCollection {
 	files, err := readSQLMigrationScript(path)
 	logError(err)
 
-	collection := &makoto.MigrationCollection{}
+	collection := makoto.MigrationCollection{}
 	for _, f := range files {
 		fullPath := filepath.Join(path, f.Name())
 		file, err := os.Open(fullPath)
@@ -36,7 +36,7 @@ func processMigrationCollection(path string) *makoto.MigrationCollection {
 		collection.Add(migration)
 	}
 
-	return collection
+	return &collection
 }
 
 func readSQLMigrationScript(path string) ([]os.FileInfo, error) {
