@@ -40,15 +40,11 @@ func (m *migrator) GetCollection() *MigrationCollection {
 	return nil
 }
 
-func (m *migrator) SetCollection(sts []MigrateStatement) {
-	collection := MigrationCollection{}
-	for i := range sts {
-		collection.Add(&sts[i])
-	}
-	m.collection = &collection
+func (m *migrator) SetCollection(c *MigrationCollection) {
+	m.collection = c
 }
 
-func (m *migrator) EnsureSchema(targetVersion string) {
+func (m *migrator) EnsureSchema(targetVersion int) {
 	currentNode, err := m.getCurrentNode()
 
 	if err != nil && err != ErrRecordNotFound {
@@ -65,7 +61,7 @@ func (m *migrator) EnsureSchema(targetVersion string) {
 	if st.Version == targetVersion {
 		return
 	}
-	if v(st.Version) < v(targetVersion) {
+	if st.Version < targetVersion {
 		log.Println("start migrate")
 		m.upto(currentNode.nextNode, targetVersion)
 	}
@@ -82,7 +78,7 @@ func (m *migrator) getCurrentNode() (*migrationItem, error) {
 	return m.GetCollection().Find(record.Version), nil
 }
 
-func (m *migrator) upto(currentNode *migrationItem, targetVersion string) {
+func (m *migrator) upto(currentNode *migrationItem, targetVersion int) {
 	tx := m.db.MustBegin()
 	defer func() {
 		if r := recover(); r != nil {

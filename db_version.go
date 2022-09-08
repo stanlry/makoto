@@ -14,9 +14,10 @@ func createSchemaVersionTable(db *sqlx.DB) error {
 	sql := `
 	CREATE TABLE IF NOT EXISTS schema_version (
 		id serial PRIMARY KEY,
-		version text,
+		version integer,
 		filename text,
 		checksum text,
+		statement text,
 		created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 	)
 	`
@@ -30,15 +31,16 @@ func createSchemaVersionTable(db *sqlx.DB) error {
 	return tx.Commit()
 }
 
-func addRecord(tx *sqlx.Tx, version, filename, checksum string) error {
+func addRecord(tx *sqlx.Tx, version int, filename, checksum, statement string) error {
 	sql := `
-	INSERT INTO schema_version (version, filename, checksum) 
-	VALUES (:version, :filename, :checksum)
+	INSERT INTO schema_version (version, filename, checksum, statement) 
+	VALUES (:version, :filename, :checksum, :statement)
 	`
 	_, err := tx.NamedExec(sql, map[string]interface{}{
-		"version":  version,
-		"filename": filename,
-		"checksum": checksum,
+		"version":   version,
+		"filename":  filename,
+		"checksum":  checksum,
+		"statement": statement,
 	})
 	if err != nil {
 		return err

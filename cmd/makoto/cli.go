@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/cororoGrap/makoto"
+	"github.com/stanlry/makoto"
 )
 
 const migrationPath = "migration"
@@ -24,11 +25,6 @@ func initMigrationDir() {
 	if err != nil {
 		fmt.Println("Created migration directory")
 	}
-}
-
-func collectMigrationScrips() {
-	migrationPath := getMigrationDir()
-	GenerateCollection(migrationPath)
 }
 
 func exists(path string) bool {
@@ -64,26 +60,25 @@ func currentDir() string {
 	return dir
 }
 
-func createNewScript(name string) {
+func createNewScript(name string, useSequence bool) {
 	dir := getMigrationDir()
-	version := getNewScriptVersion()
+	version := time.Now().Local().Format("20060201150405")
+	if useSequence {
+		version = getNewScriptSequence()
+	}
 
-	filename := fmt.Sprintf("v%v_%s.sql", version, name)
+	filename := fmt.Sprintf("%v_%s.sql", version, name)
 	fullPath := filepath.Join(dir, filename)
 	fmt.Println("Create new migration script: ", filename)
 	os.Create(fullPath)
 }
 
-func getNewScriptVersion() string {
+func getNewScriptSequence() string {
 	collection := initCollection()
 	if st := collection.LastStatement(); st != nil {
-		v, err := strconv.Atoi(st.Version[1:])
-		if err != nil {
-			log.Fatal(err)
-		}
-		v++
-		return strconv.Itoa(v)
+		return strconv.Itoa(st.Version + 1)
 	}
+
 	return "1"
 }
 

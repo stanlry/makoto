@@ -11,20 +11,20 @@ type MigrateUp struct {
 	collection *MigrationCollection
 }
 
-func (m *MigrateUp) UpTo(node *migrationItem, targetVersion string) {
+func (m *MigrateUp) UpTo(node *migrationItem, targetVersion int) {
 	tx := m.tx
 
 	currentNode := node
 	for {
 		statement := currentNode.statement
-		if v(statement.Version) <= v(targetVersion) {
+		if statement.Version <= targetVersion {
 			_, err := tx.Exec(statement.UpStatement)
 			if err != nil {
 				log.Println("Fail to run migration script: ", statement.Filename)
 				log.Fatal(err)
 			}
 			log.Println("Migrated script: ", statement.Filename)
-			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum)
+			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum, statement.UpStatement)
 			if err != nil {
 				log.Fatal(err)
 			}

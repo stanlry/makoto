@@ -1,20 +1,19 @@
 package makoto
 
 import (
-	"strconv"
 	"time"
 )
 
 type MigrationRecord struct {
 	ID        int
-	Version   string
+	Version   int
 	Filename  string
 	Checksum  string
 	CreatedAt time.Time `db:"created_at"`
 }
 
 type MigrateStatement struct {
-	Version       string
+	Version       int
 	Filename      string
 	UpStatement   string
 	DownStatement string
@@ -61,7 +60,7 @@ func (m *MigrationCollection) Add(st *MigrateStatement) {
 
 	migration := m.head
 	for {
-		if v(st.Version) < v(migration.statement.Version) {
+		if st.Version < migration.statement.Version {
 			if migration.previousNode != nil {
 				migration.previousNode.nextNode = newItem
 				newItem.previousNode = migration.previousNode
@@ -81,7 +80,7 @@ func (m *MigrationCollection) Add(st *MigrateStatement) {
 	}
 }
 
-func (m *MigrationCollection) Find(version string) *migrationItem {
+func (m *MigrationCollection) Find(version int) *migrationItem {
 	migration := m.head
 	for {
 		if migration == nil {
@@ -109,7 +108,7 @@ func (m *MigrationCollection) Tail() *migrationItem {
 	}
 }
 
-func (m *MigrationCollection) FindStatement(version string) *MigrateStatement {
+func (m *MigrationCollection) FindStatement(version int) *MigrateStatement {
 	item := m.Find(version)
 	if item == nil {
 		return nil
@@ -119,12 +118,4 @@ func (m *MigrationCollection) FindStatement(version string) *MigrateStatement {
 
 func (m *MigrationCollection) LastStatement() *MigrateStatement {
 	return m.Tail().Statement()
-}
-
-func v(v string) int {
-	val, err := strconv.Atoi(v[1:])
-	if err != nil {
-		panic(err)
-	}
-	return val
 }

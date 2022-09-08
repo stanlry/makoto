@@ -6,12 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cororoGrap/makoto"
-	"github.com/cororoGrap/makoto/cmd/makoto/db"
 	"github.com/olekukonko/tablewriter"
+	"github.com/stanlry/makoto"
+	"github.com/stanlry/makoto/cmd/makoto/db"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -56,18 +57,33 @@ func main() {
 		},
 		{
 			Name: "collect",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name: "no-embed",
+				},
+			},
 			Action: func(c *cli.Context) error {
-				collectMigrationScrips()
+				migrationPath := getMigrationDir()
+				if c.Bool("no-embed") {
+					GenerateStringCollection(migrationPath)
+				} else {
+					GenerateEmbedCollection(migrationPath)
+				}
 				return nil
 			},
 		},
 		{
 			Name:  "new",
 			Usage: "Create new migration sql script",
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name: "seq",
+				},
+			},
 			Action: func(c *cli.Context) error {
 				if c.NArg() == 1 {
 					name := c.Args()[0]
-					createNewScript(name)
+					createNewScript(name, c.Bool("seq"))
 				} else {
 					fmt.Println("Missing file name")
 				}
@@ -88,7 +104,7 @@ func main() {
 				table.SetHeader([]string{"Version", "Script", "Create Date"})
 				for _, record := range r {
 					date := record.CreatedAt.Format(time.RFC3339)
-					table.Append([]string{record.Version, record.Filename, date})
+					table.Append([]string{strconv.Itoa(record.Version), record.Filename, date})
 				}
 				table.Render()
 				return nil
@@ -97,7 +113,7 @@ func main() {
 		{
 			Name: "up",
 			Flags: []cli.Flag{
-				cli.StringFlag{
+				cli.IntFlag{
 					Name: "version",
 				},
 			},
@@ -107,8 +123,8 @@ func main() {
 				collection := processMigrationCollection(getMigrationDir())
 				migrator := makoto.GetMigrator(db, collection)
 
-				version := c.String("version")
-				if len(version) == 0 {
+				version := c.Int("version")
+				if version == 0 {
 					migrator.Up()
 				} else {
 					migrator.EnsureSchema(version)
