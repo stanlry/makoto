@@ -21,6 +21,10 @@ SELECT
 	created_at
 FROM schema_version
 `
+	_sqlSave = `
+INSERT INTO schema_version (version, filename, checksum, statement) 
+VALUES ($1, $2, $3, $4)
+`
 )
 
 func createSchemaVersionTable(db *sql.DB) error {
@@ -60,22 +64,8 @@ func createSchemaVersionTable(db *sql.DB) error {
 }
 
 func addRecord(tx *sql.Tx, version int, filename, checksum, statement string) error {
-	sql := `
-	INSERT INTO schema_version (version, filename, checksum, statement) 
-	VALUES (?, ?, ?, ?)
-	`
-	stmt, err := tx.Prepare(sql)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(version, filename, checksum, statement)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := tx.Exec(_sqlSave, version, filename, checksum, statement)
+	return err
 }
 
 func getLastRecord(db *sql.DB) (*MigrationRecord, error) {
