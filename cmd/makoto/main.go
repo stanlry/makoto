@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/olekukonko/tablewriter"
 	"github.com/stanlry/makoto"
 	"github.com/stanlry/makoto/cmd/makoto/db"
@@ -139,7 +139,7 @@ func main() {
 
 func configureDBUri() {
 	if len(database) == 0 {
-		err := loadDBJson()
+		err := loadDBConfig()
 		if err != nil {
 			panic(err)
 		}
@@ -148,34 +148,26 @@ func configureDBUri() {
 
 func getConfigPath() string {
 	if len(strings.TrimSpace(configPath)) == 0 {
-		return getDefaultConfigPath()
+		return filepath.Join(currentDir(), "config.toml")
 	}
-	fmt.Println("this is config path: ", configPath)
 	return configPath
 }
 
-func loadDBJson() error {
+func loadDBConfig() error {
 	path := getConfigPath()
+	fmt.Println("load config path: ", path)
 
 	file, err := os.Open(path)
 	logError(err)
 
 	config := dbConfig{}
 	configSt, err := ioutil.ReadAll(file)
-	err = json.Unmarshal(configSt, &config)
+	err = toml.Unmarshal(configSt, &config)
 	logError(err)
 
-	if len(config.Database) == 0 || config.Database == "PostgreSQL" {
-		pg := config.PostgreSQL
-		database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
-			pg.User, pg.Password, pg.Host, pg.Port, pg.DBName)
-	} else {
-		panic("Unsupported database")
-	}
+	pg := config.Postgres
+	database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
+		pg.User, pg.Password, pg.Host, pg.Port, pg.DBName)
 
 	return nil
-}
-
-func getDefaultConfigPath() string {
-	return filepath.Join(getMigrationDir(), "config.json")
 }

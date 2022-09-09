@@ -1,15 +1,14 @@
 package main
 
 type dbConfig struct {
-	Database   string
-	PostgreSQL postgres
+	Postgres postgres `toml:"postgres"`
 }
 
 type postgres struct {
-	Host     string
-	Port     string
-	DBName   string
-	User     string
-	Password string
-	SSLMode  bool
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	DBName   string `toml:"name"`
+	User     string `toml:"user"`
+	Password string `toml:"password"`
+	SSLMode  bool   `toml:"ssl_mode"`
 }

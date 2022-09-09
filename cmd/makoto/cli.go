@@ -12,18 +12,36 @@ import (
 	"github.com/stanlry/makoto"
 )
 
-const migrationPath = "migration"
+const (
+	migrationDir = "migration"
+	sqlDir       = "sql"
+	seedDir      = "seed"
+)
 
 func initMigrationDir() {
 	dir := currentDir()
-	path := filepath.Join(dir, migrationPath)
+
+	// create migration folder
+	migrationPath := filepath.Join(dir, migrationDir)
+	mkdir(migrationPath)
+
+	// create sql script folder
+	sqlPath := filepath.Join(dir, migrationDir, sqlDir)
+	mkdir(sqlPath)
+
+	// create sql seed folder
+	seedPath := filepath.Join(dir, migrationDir, seedDir)
+	mkdir(seedPath)
+}
+
+func mkdir(path string) {
 	if exists(path) {
-		fmt.Println("Migration directory already exists")
+		fmt.Printf("Directory '%v' already exists\n", path)
 		return
 	}
 	err := os.Mkdir(path, os.ModePerm)
 	if err != nil {
-		fmt.Println("Created migration directory")
+		fmt.Printf("Created directory '%v'\n", path)
 	}
 }
 
@@ -39,12 +57,25 @@ func exists(path string) bool {
 	return true
 }
 
-func getMigrationDir() string {
+func getSQLScriptDir() string {
 	dir := currentDir()
-	if strings.HasSuffix(dir, migrationPath) {
+	if strings.HasSuffix(dir, sqlDir) {
 		return dir
 	}
-	fullPath := filepath.Join(dir, migrationPath)
+	fullPath := filepath.Join(dir, migrationDir, sqlDir)
+	if exists(fullPath) {
+		return fullPath
+	}
+	log.Fatal("Unknow sql script directory")
+	return ""
+}
+
+func getMigrationDir() string {
+	dir := currentDir()
+	if strings.HasSuffix(dir, migrationDir) {
+		return dir
+	}
+	fullPath := filepath.Join(dir, migrationDir)
 	if exists(fullPath) {
 		return fullPath
 	}
@@ -61,7 +92,7 @@ func currentDir() string {
 }
 
 func createNewScript(name string, useSequence bool) {
-	dir := getMigrationDir()
+	dir := getSQLScriptDir()
 	version := time.Now().Local().Format("20060201150405")
 	if useSequence {
 		version = getNewScriptSequence()

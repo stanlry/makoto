@@ -71,38 +71,22 @@ Custom config file
 makoto -config [file path] [command]
 ```
 
-If no custom config file or database uri is given, makoto will search for "config.json" placed inside migration directory
+If no custom config file or database uri is given, makoto will search for "config.toml"
 
 Config file format
 
-```json
-{
-  "database": "PostgreSQL",
-  "PostgreSQL": {
-    "Host": "localhost",
-    "Port": "5432",
-    "DBName": "xxx",
-    "User": "postgres",
-    "Password": "123456"
-  }
-}
+```toml
+[postgres]
+  host="localhost"
+  port="5432"
+  user="postgres"
+  password="123456"
+  name="database name"
 ```
 
 ## Integrate with Golang
 
 First generate the collection file with CLI.
-
-Initialize the makoto migrator
-
-```go
-migrator := makoto.New(db) // pass the DB pointer
-```
-
-Pass the migration collection to migrator
-
-```go
-migrator.SetCollection(migration.GetCollection())
-```
 
 Perform migration
 
@@ -116,8 +100,7 @@ migrator.EnsureSchema(202201011233) // migrate to a given version
 
 ```go
 func startMigration(db *sql.DB) {
-    migrator := makoto.New(db)
-    migrator.SetEmbedCollection(migration.Content)
+    migrator := migration.New(db)
     migrator.EnsureSchema(202201011233)
 }
 ```

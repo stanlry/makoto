@@ -8,30 +8,30 @@ import (
 	"path"
 )
 
-type migrator struct {
+type Migrator struct {
 	db         *sql.DB
 	collection *MigrationCollection
 }
 
-func GetMigrator(db *sql.DB, collection *MigrationCollection) *migrator {
-	return &migrator{
+func GetMigrator(db *sql.DB, collection *MigrationCollection) *Migrator {
+	return &Migrator{
 		db:         db,
 		collection: collection,
 	}
 }
 
-func New(db *sql.DB) *migrator {
+func New(db *sql.DB) *Migrator {
 	err := createSchemaVersionTable(db)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return &migrator{
+	return &Migrator{
 		db: db,
 	}
 }
 
-func (m *migrator) GetCollection() *MigrationCollection {
+func (m *Migrator) GetCollection() *MigrationCollection {
 	if m.collection != nil {
 		return m.collection
 	}
@@ -39,11 +39,11 @@ func (m *migrator) GetCollection() *MigrationCollection {
 	return nil
 }
 
-func (m *migrator) SetCollection(c *MigrationCollection) {
+func (m *Migrator) SetCollection(c *MigrationCollection) {
 	m.collection = c
 }
 
-func (m *migrator) SetEmbedCollection(fs embed.FS) {
+func (m *Migrator) SetEmbedCollection(fs embed.FS) {
 	m.collection.Reset()
 
 	fnames, err := getAllFilenames(&fs, "")
@@ -62,7 +62,7 @@ func (m *migrator) SetEmbedCollection(fs embed.FS) {
 	}
 }
 
-func (m *migrator) EnsureSchema(targetVersion int) {
+func (m *Migrator) EnsureSchema(targetVersion int) {
 	currentNode, err := m.getCurrentNode()
 
 	if err != nil && err != ErrRecordNotFound {
@@ -85,7 +85,7 @@ func (m *migrator) EnsureSchema(targetVersion int) {
 	}
 }
 
-func (m *migrator) getCurrentNode() (*migrationItem, error) {
+func (m *Migrator) getCurrentNode() (*migrationItem, error) {
 	record, err := getLastRecord(m.db)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (m *migrator) getCurrentNode() (*migrationItem, error) {
 	return m.GetCollection().Find(record.Version), nil
 }
 
-func (m *migrator) upto(currentNode *migrationItem, targetVersion int) {
+func (m *Migrator) upto(currentNode *migrationItem, targetVersion int) {
 	tx, err := m.db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -112,7 +112,7 @@ func (m *migrator) upto(currentNode *migrationItem, targetVersion int) {
 	tx.Commit()
 }
 
-func (m *migrator) Up() {
+func (m *Migrator) Up() {
 	lastVersion := m.GetCollection().LastStatement().Version
 	m.EnsureSchema(lastVersion)
 }
