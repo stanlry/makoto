@@ -94,7 +94,7 @@ func main() {
 				table := tablewriter.NewWriter(os.Stdout)
 				table.SetHeader([]string{"Version", "Script Name"})
 
-				collection := processMigrationCollection(getMigrationDir())
+				collection := processMigrationCollection(getSQLScriptDir())
 				item := collection.Head()
 				for {
 					if item == nil {
@@ -142,7 +142,7 @@ func main() {
 				configureDBUri()
 				db := db.ConnectPostgres(database)
 				defer db.Close()
-				collection := processMigrationCollection(getMigrationDir())
+				collection := processMigrationCollection(getSQLScriptDir())
 				migrator := makoto.GetMigrator(db, collection)
 				migrator.SetCollection(collection)
 
