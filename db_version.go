@@ -3,6 +3,7 @@ package makoto
 import (
 	"database/sql"
 	"errors"
+	"log"
 )
 
 var (
@@ -37,7 +38,12 @@ func createSchemaVersionTable(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			log.Println("Rollback migration, Error: ", r)
+		}
+	}()
 
 	stmt, err := tx.Prepare(sql)
 	if err != nil {
