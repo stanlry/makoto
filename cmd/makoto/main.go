@@ -89,6 +89,28 @@ func main() {
 			},
 		},
 		{
+			Name: "list",
+			Action: func(c *cli.Context) error {
+				table := tablewriter.NewWriter(os.Stdout)
+				table.SetHeader([]string{"Version", "Script Name"})
+
+				collection := processMigrationCollection(getMigrationDir())
+				item := collection.Head()
+				for {
+					if item == nil {
+						break
+					}
+					if item.Statement() == nil {
+						break
+					}
+					table.Append([]string{strconv.Itoa(item.Statement().Version), item.Statement().Filename})
+					item = item.Next()
+				}
+				table.Render()
+				return nil
+			},
+		},
+		{
 			Name: "status",
 			Action: func(c *cli.Context) error {
 				configureDBUri()
@@ -122,6 +144,7 @@ func main() {
 				defer db.Close()
 				collection := processMigrationCollection(getMigrationDir())
 				migrator := makoto.GetMigrator(db, collection)
+				migrator.SetCollection(collection)
 
 				version := c.Int("version")
 				if version == 0 {

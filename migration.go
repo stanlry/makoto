@@ -122,5 +122,9 @@ func (m *MigrationCollection) FindStatement(version int) *MigrateStatement {
 }
 
 func (m *MigrationCollection) LastStatement() *MigrateStatement {
-	return m.Tail().Statement()
+	tail := m.Tail()
+	if tail != nil {
+		return m.Tail().Statement()
+	}
+	return nil
 }

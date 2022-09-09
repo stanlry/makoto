@@ -90,7 +90,9 @@ func (m *Migrator) getCurrentNode() (*migrationItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	if record.Version > m.GetCollection().LastStatement().Version {
+
+	lastStatement := m.GetCollection().LastStatement()
+	if lastStatement != nil && record.Version > lastStatement.Version {
 		return m.GetCollection().Tail(), nil
 	}
 	return m.GetCollection().Find(record.Version), nil
@@ -113,8 +115,10 @@ func (m *Migrator) upto(currentNode *migrationItem, targetVersion int) {
 }
 
 func (m *Migrator) Up() {
-	lastVersion := m.GetCollection().LastStatement().Version
-	m.EnsureSchema(lastVersion)
+	lastStatement := m.GetCollection().LastStatement()
+	if lastStatement != nil {
+		m.EnsureSchema(lastStatement.Version)
+	}
 }
 
 func upTo(tx *sql.Tx, node *migrationItem, targetVersion int) {
