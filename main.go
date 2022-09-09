@@ -84,6 +84,11 @@ func (m *Migrator) EnsureSchema(targetVersion int) {
 }
 
 func (m *Migrator) getCurrentNode() (*migrationItem, error) {
+	// ensure schema version table exists
+	if err := createSchemaVersionTable(m.db); err != nil {
+		panic(err)
+	}
+
 	record, err := getLastRecord(m.db)
 	if err != nil {
 		return nil, err
@@ -97,11 +102,6 @@ func (m *Migrator) getCurrentNode() (*migrationItem, error) {
 }
 
 func (m *Migrator) upto(currentNode *migrationItem, targetVersion int) {
-	// ensure schema version table exists
-	if err := createSchemaVersionTable(m.db); err != nil {
-		panic(err)
-	}
-
 	tx, err := m.db.Begin()
 	if err != nil {
 		log.Fatal(err)
