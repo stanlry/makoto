@@ -10,7 +10,7 @@ type MigrationRecord struct {
 	Filename  string
 	Checksum  string
 	Statement string
-	CreatedAt time.Time `db:"created_at"`
+	CreatedAt time.Time
 }
 
 type MigrateStatement struct {

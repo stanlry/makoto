@@ -21,11 +21,6 @@ func GetMigrator(db *sql.DB, collection *MigrationCollection) *Migrator {
 }
 
 func New(db *sql.DB) *Migrator {
-	err := createSchemaVersionTable(db)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	return &Migrator{
 		db: db,
 	}
@@ -77,11 +72,14 @@ func (m *Migrator) EnsureSchema(targetVersion int) {
 
 	st := currentNode.Statement()
 	if st.Version == targetVersion {
+		log.Println("Schema version is already up to date")
 		return
 	}
 	if st.Version < targetVersion {
-		log.Println("start migrate")
+		log.Println("Start migration")
 		m.upto(currentNode.nextNode, targetVersion)
+	} else {
+		log.Println("Database schema version is ahead of migration script")
 	}
 }
 
@@ -99,6 +97,11 @@ func (m *Migrator) getCurrentNode() (*migrationItem, error) {
 }
 
 func (m *Migrator) upto(currentNode *migrationItem, targetVersion int) {
+	// ensure schema version table exists
+	if err := createSchemaVersionTable(m.db); err != nil {
+		panic(err)
+	}
+
 	tx, err := m.db.Begin()
 	if err != nil {
 		log.Fatal(err)
@@ -131,7 +134,7 @@ func upTo(tx *sql.Tx, node *migrationItem, targetVersion int) {
 				log.Println("Fail to run migration script: ", statement.Filename)
 				log.Fatal(err)
 			}
-			log.Println("Migrated script: ", statement.Filename)
+			log.Println("Migrate script: ", statement.Filename)
 			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum, statement.UpStatement)
 			if err != nil {
 				log.Fatal(err)

@@ -28,7 +28,7 @@ func parseFilenameVersion(filename string) int {
 
 	st := r.FindString(filename)
 	if st == "" {
-		log.Fatal("invalid file, empty version number")
+		log.Fatal("Invalid file, empty version number")
 	}
 	st = st[:len(st)-1]
 	v, err := strconv.Atoi(st)

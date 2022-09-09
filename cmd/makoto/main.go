@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -178,7 +179,7 @@ func getConfigPath() string {
 
 func loadDBConfig() error {
 	path := getConfigPath()
-	fmt.Println("load config path: ", path)
+	log.Println("Load config: ", path)
 
 	file, err := os.Open(path)
 	logError(err)

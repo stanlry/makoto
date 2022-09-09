@@ -36,12 +36,12 @@ func initMigrationDir() {
 
 func mkdir(path string) {
 	if exists(path) {
-		fmt.Printf("Directory '%v' already exists\n", path)
+		log.Printf("Directory '%v' already exists\n", path)
 		return
 	}
 	err := os.Mkdir(path, os.ModePerm)
 	if err != nil {
-		fmt.Printf("Created directory '%v'\n", path)
+		log.Printf("Created directory '%v'\n", path)
 	}
 }
 
@@ -100,7 +100,7 @@ func createNewScript(name string, useSequence bool) {
 
 	filename := fmt.Sprintf("%v_%s.sql", version, name)
 	fullPath := filepath.Join(dir, filename)
-	fmt.Println("Create new migration script: ", filename)
+	log.Println("Create new migration script: ", filename)
 	os.Create(fullPath)
 }
 
