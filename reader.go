@@ -21,7 +21,7 @@ func ParseMigrationStatement(fname string, r io.Reader) *MigrateStatement {
 }
 
 func parseFilenameVersion(filename string) int {
-	r, err := regexp.Compile("[0-9]_")
+	r, err := regexp.Compile("[0-9]+_")
 	if err != nil {
 		log.Fatal(err)
 	}

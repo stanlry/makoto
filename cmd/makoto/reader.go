@@ -26,7 +26,7 @@ func processMigrationCollection(path string) *makoto.MigrationCollection {
 		file, err := os.Open(fullPath)
 		logError(err)
 
-		migration := makoto.ParseMigrationStatement(file.Name(), file)
+		migration := makoto.ParseMigrationStatement(f.Name(), file)
 
 		// skip invalid file
 		if migration.Version == 0 {
@@ -41,14 +41,25 @@ func processMigrationCollection(path string) *makoto.MigrationCollection {
 
 func readSQLMigrationScript(path string) ([]os.FileInfo, error) {
 	dir, err := os.Open(path)
-	logError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	files, err := dir.Readdir(0)
-	logError(err)
+	if err != nil {
+		return nil, err
+	}
 
 	result := []os.FileInfo{}
 	for _, f := range files {
 		if f.IsDir() {
+			// dirPath := filepath.Join(path, f.Name())
+			// res, err := readSQLMigrationScript(dirPath)
+			// if err != nil {
+			// 	return nil, err
+			// }
+
+			// result = append(result, res...)
 			continue
 		}
 		if filepath.Ext(f.Name()) != SQLFileExtension {
