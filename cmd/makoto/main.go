@@ -200,8 +200,8 @@ func loadDBConfig() error {
 	logError(err)
 
 	pg := config.Postgres
-	database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=%v",
-		pg.User, pg.Password, pg.Host, pg.Port, pg.DBName, pg.SSLMode)
+	database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
+		pg.User, pg.Password, pg.Host, pg.Port, pg.DBName)
 
 	return nil
 }

@@ -1,3 +1,3 @@
 package makoto
 
-var VERSION = "0.0.12"
+var VERSION = "0.0.13"

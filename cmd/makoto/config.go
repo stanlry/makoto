@@ -10,5 +10,5 @@ type postgres struct {
 	DBName   string `toml:"name"`
 	User     string `toml:"user"`
 	Password string `toml:"password"`
-	SSLMode  bool   `toml:"ssl_mode"`
+	SSLMode  string `toml:"ssl_mode"`
 }
