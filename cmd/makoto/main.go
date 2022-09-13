@@ -31,42 +31,47 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:        "database",
+			Usage:       "Database connection URL",
 			Destination: &database,
 		},
 		cli.StringFlag{
 			Name:        "config",
+			Usage:       "Specify config path",
 			Destination: &configPath,
 		},
 	}
 
 	app.Commands = []cli.Command{
 		{
-			Name: "version",
+			Name:  "version",
+			Usage: "Version of makoto",
 			Action: func(c *cli.Context) error {
 				fmt.Println("makoto version: ", makoto.VERSION)
 				return nil
 			},
 		},
 		{
-			Name: "init",
+			Name:  "init",
+			Usage: "Initialize migration directory",
 			Action: func(c *cli.Context) error {
 				initMigrationDir()
 				return nil
 			},
 		},
 		{
-			Name: "collect",
+			Name:  "pack",
+			Usage: "Generate a go file that packs all the sql migration scripts with it",
 			Flags: []cli.Flag{
 				cli.BoolFlag{
-					Name: "no-embed",
+					Name:  "no-embed",
+					Usage: "Do not use embed to pack the sql migration scripts",
 				},
 			},
 			Action: func(c *cli.Context) error {
-				migrationPath := getMigrationDir()
 				if c.Bool("no-embed") {
-					GenerateStringCollection(migrationPath)
+					GenerateStringCollection(getSQLScriptDir())
 				} else {
-					GenerateEmbedCollection(migrationPath)
+					GenerateEmbedCollection(getMigrationDir())
 				}
 				return nil
 			},
@@ -76,7 +81,8 @@ func main() {
 			Usage: "Create new migration sql script",
 			Flags: []cli.Flag{
 				cli.BoolFlag{
-					Name: "seq",
+					Name:  "seq",
+					Usage: "Use incremental sequence instead of datetime to generate file version",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -90,7 +96,8 @@ func main() {
 			},
 		},
 		{
-			Name: "list",
+			Name:  "list",
+			Usage: "List existing sql migration scripts in the directory",
 			Action: func(c *cli.Context) error {
 				table := tablewriter.NewWriter(os.Stdout)
 				table.SetHeader([]string{"Version", "Script Name"})
@@ -112,7 +119,8 @@ func main() {
 			},
 		},
 		{
-			Name: "status",
+			Name:  "status",
+			Usage: "Return the migration table from database",
 			Action: func(c *cli.Context) error {
 				configureDBUri()
 				db := db.ConnectPostgres(database)
@@ -133,10 +141,12 @@ func main() {
 			},
 		},
 		{
-			Name: "up",
+			Name:  "up",
+			Usage: "Migrate the database to head",
 			Flags: []cli.Flag{
 				cli.IntFlag{
-					Name: "version",
+					Name:  "version",
+					Usage: "Specify the migration version",
 				},
 			},
 			Action: func(c *cli.Context) error {
@@ -190,8 +200,8 @@ func loadDBConfig() error {
 	logError(err)
 
 	pg := config.Postgres
-	database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=disable",
-		pg.User, pg.Password, pg.Host, pg.Port, pg.DBName)
+	database = fmt.Sprintf("user=%v password=%v host=%v port=%v dbname=%v sslmode=%v",
+		pg.User, pg.Password, pg.Host, pg.Port, pg.DBName, pg.SSLMode)
 
 	return nil
 }

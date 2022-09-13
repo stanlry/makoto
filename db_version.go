@@ -31,7 +31,7 @@ func createSchemaVersionTable(db *sql.DB) error {
 	sql := `
 	CREATE TABLE IF NOT EXISTS schema_version (
 		id serial PRIMARY KEY,
-		version integer,
+		version bigint,
 		filename text,
 		checksum text,
 		statement text,
