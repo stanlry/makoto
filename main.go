@@ -26,6 +26,10 @@ func New(db *sql.DB) *Migrator {
 	}
 }
 
+func (m *Migrator) Close() {
+	m.db.Close()
+}
+
 func (m *Migrator) GetCollection() *MigrationCollection {
 	if m.collection != nil {
 		return m.collection

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -16,6 +17,8 @@ import (
 	"github.com/stanlry/makoto/cmd/makoto/db"
 	cli "github.com/urfave/cli/v2"
 )
+
+const keyMigrator = "migrator"
 
 var (
 	database   string
@@ -142,18 +145,33 @@ func main() {
 			},
 		},
 		{
-			Name:  "drop",
-			Usage: "Run all the down scripts",
-			Action: func(c *cli.Context) error {
-				migrator := prepareMigrator()
-				migrator.DropAll()
-				return nil
-			},
-		},
-		{
 			Name:  "migrate",
 			Usage: "Run migration scripts",
+			Before: func(ctx *cli.Context) error {
+				configureDBUri()
+				db := db.ConnectPostgres(database)
+				collection := processMigrationCollection(getSQLScriptDir())
+				migrator := makoto.GetMigrator(db, collection)
+				migrator.SetCollection(collection)
+
+				ctx.Context = context.WithValue(ctx.Context, keyMigrator, migrator)
+				return nil
+			},
+			After: func(ctx *cli.Context) error {
+				migrator := ctx.Context.Value(keyMigrator).(*makoto.Migrator)
+				migrator.Close()
+				return nil
+			},
 			Subcommands: cli.Commands{
+				{
+					Name:  "drop",
+					Usage: "drop all migrations",
+					Action: func(ctx *cli.Context) error {
+						migrator := ctx.Context.Value(keyMigrator).(*makoto.Migrator)
+						migrator.DropAll()
+						return nil
+					},
+				},
 				{
 					Name:  "up",
 					Usage: "migrate up",
@@ -164,7 +182,7 @@ func main() {
 						},
 					},
 					Action: func(ctx *cli.Context) error {
-						migrator := prepareMigrator()
+						migrator := ctx.Context.Value(keyMigrator).(*makoto.Migrator)
 						version := ctx.Int("version")
 						if version == 0 {
 							migrator.EnsureHead()
@@ -185,7 +203,7 @@ func main() {
 						},
 					},
 					Action: func(ctx *cli.Context) error {
-						migrator := prepareMigrator()
+						migrator := ctx.Context.Value(keyMigrator).(*makoto.Migrator)
 						version := ctx.Int("version")
 						migrator.Down(version)
 						return nil
@@ -196,16 +214,6 @@ func main() {
 	}
 
 	app.Run(os.Args)
-}
-
-func prepareMigrator() *makoto.Migrator {
-	configureDBUri()
-	db := db.ConnectPostgres(database)
-	defer db.Close()
-	collection := processMigrationCollection(getSQLScriptDir())
-	migrator := makoto.GetMigrator(db, collection)
-	migrator.SetCollection(collection)
-	return migrator
 }
 
 func configureDBUri() {
