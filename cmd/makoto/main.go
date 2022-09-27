@@ -135,10 +135,10 @@ func main() {
 				}
 
 				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"Version", "Script", "Create Date"})
+				table.SetHeader([]string{"Version", "Execution Type", "Script", "Create Date"})
 				for _, record := range r {
 					date := record.CreatedAt.Format(time.RFC3339)
-					table.Append([]string{strconv.Itoa(record.Version), record.Filename, date})
+					table.Append([]string{strconv.Itoa(record.Version), record.Exectype, record.Filename, date})
 				}
 				table.Render()
 				return nil

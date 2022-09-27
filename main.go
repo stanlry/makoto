@@ -43,7 +43,7 @@ func (m *Migrator) SetCollection(c *MigrationCollection) {
 }
 
 func (m *Migrator) SetEmbedCollection(fs embed.FS) {
-	m.collection.Reset()
+	m.collection = &MigrationCollection{}
 
 	fnames, err := getAllFilenames(&fs, "")
 	if err != nil {
