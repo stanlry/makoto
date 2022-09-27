@@ -14,7 +14,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/stanlry/makoto"
 	"github.com/stanlry/makoto/cmd/makoto/db"
-	cli "gopkg.in/urfave/cli.v1"
+	cli "github.com/urfave/cli/v2"
 )
 
 var (
@@ -29,19 +29,19 @@ func main() {
 	app.Version = makoto.VERSION
 	app.Usage = "minimalist migration tool for PostgreSQL"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "database",
 			Usage:       "Database connection URL",
 			Destination: &database,
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:        "config",
 			Usage:       "Specify config path",
 			Destination: &configPath,
 		},
 	}
 
-	app.Commands = []cli.Command{
+	app.Commands = []*cli.Command{
 		{
 			Name:  "version",
 			Usage: "Version of makoto",
@@ -62,7 +62,7 @@ func main() {
 			Name:  "pack",
 			Usage: "Generate a go file that packs all the sql migration scripts with it",
 			Flags: []cli.Flag{
-				cli.BoolFlag{
+				&cli.BoolFlag{
 					Name:  "no-embed",
 					Usage: "Do not use embed to pack the sql migration scripts",
 				},
@@ -80,14 +80,15 @@ func main() {
 			Name:  "new",
 			Usage: "Create new migration sql script",
 			Flags: []cli.Flag{
-				cli.BoolFlag{
-					Name:  "seq",
-					Usage: "Use incremental sequence instead of datetime to generate file version",
+				&cli.BoolFlag{
+					Name:     "seq",
+					Usage:    "Use incremental sequence instead of datetime to generate file version",
+					Required: true,
 				},
 			},
 			Action: func(c *cli.Context) error {
 				if c.NArg() == 1 {
-					name := c.Args()[0]
+					name := c.Args().Get(0)
 					createNewScript(name, c.Bool("seq"))
 				} else {
 					fmt.Println("Missing file name")
@@ -141,34 +142,70 @@ func main() {
 			},
 		},
 		{
-			Name:  "up",
-			Usage: "Migrate the database to head",
-			Flags: []cli.Flag{
-				cli.IntFlag{
-					Name:  "version",
-					Usage: "Specify the migration version",
-				},
-			},
+			Name:  "drop",
+			Usage: "Run all the down scripts",
 			Action: func(c *cli.Context) error {
-				configureDBUri()
-				db := db.ConnectPostgres(database)
-				defer db.Close()
-				collection := processMigrationCollection(getSQLScriptDir())
-				migrator := makoto.GetMigrator(db, collection)
-				migrator.SetCollection(collection)
-
-				version := c.Int("version")
-				if version == 0 {
-					migrator.Up()
-				} else {
-					migrator.EnsureSchema(version)
-				}
+				migrator := prepareMigrator()
+				migrator.DropAll()
 				return nil
+			},
+		},
+		{
+			Name:  "migrate",
+			Usage: "Run migration scripts",
+			Subcommands: cli.Commands{
+				{
+					Name:  "up",
+					Usage: "migrate up",
+					Flags: []cli.Flag{
+						&cli.IntFlag{
+							Name:  "version",
+							Usage: "Specify the migration version",
+						},
+					},
+					Action: func(ctx *cli.Context) error {
+						migrator := prepareMigrator()
+						version := ctx.Int("version")
+						if version == 0 {
+							migrator.EnsureHead()
+						} else {
+							migrator.EnsureSchema(version)
+						}
+						return nil
+					},
+				},
+				{
+					Name:  "down",
+					Usage: "migrate down",
+					Flags: []cli.Flag{
+						&cli.IntFlag{
+							Name:     "version",
+							Usage:    "Specify the migration version",
+							Required: true,
+						},
+					},
+					Action: func(ctx *cli.Context) error {
+						migrator := prepareMigrator()
+						version := ctx.Int("version")
+						migrator.Down(version)
+						return nil
+					},
+				},
 			},
 		},
 	}
 
 	app.Run(os.Args)
+}
+
+func prepareMigrator() *makoto.Migrator {
+	configureDBUri()
+	db := db.ConnectPostgres(database)
+	defer db.Close()
+	collection := processMigrationCollection(getSQLScriptDir())
+	migrator := makoto.GetMigrator(db, collection)
+	migrator.SetCollection(collection)
+	return migrator
 }
 
 func configureDBUri() {

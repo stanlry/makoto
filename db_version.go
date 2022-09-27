@@ -17,13 +17,14 @@ SELECT
 	version,
 	filename,
 	checksum,
+	exectype,
 	statement,
 	created_at
 FROM schema_version
 `
 	_sqlSave = `
-INSERT INTO schema_version (version, filename, checksum, statement) 
-VALUES ($1, $2, $3, $4)
+INSERT INTO schema_version (version, filename, checksum, exectype, statement) 
+VALUES ($1, $2, $3, $4, $5)
 `
 )
 
@@ -34,6 +35,7 @@ func createSchemaVersionTable(db *sql.DB) error {
 		version bigint,
 		filename text,
 		checksum text,
+		exectype text,
 		statement text,
 		created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 	)
@@ -63,8 +65,8 @@ func createSchemaVersionTable(db *sql.DB) error {
 	return tx.Commit()
 }
 
-func addRecord(tx *sql.Tx, version int, filename, checksum, statement string) error {
-	_, err := tx.Exec(_sqlSave, version, filename, checksum, statement)
+func addRecord(tx *sql.Tx, version int, filename, checksum, exectype, statement string) error {
+	_, err := tx.Exec(_sqlSave, version, filename, checksum, exectype, statement)
 	return err
 }
 
@@ -81,7 +83,7 @@ LIMIT 1
 
 	record := MigrationRecord{}
 	if row.Next() {
-		err = row.Scan(&record.ID, &record.Version, &record.Filename, &record.Checksum, &record.Statement, &record.CreatedAt)
+		err = record.ScanRow(row)
 		if err != nil {
 			return nil, err
 		}
@@ -100,7 +102,7 @@ func GetAllRecords(db *sql.DB) ([]MigrationRecord, error) {
 	records := []MigrationRecord{}
 	for rows.Next() {
 		record := MigrationRecord{}
-		err = rows.Scan(&record.ID, &record.Version, &record.Filename, &record.Checksum, &record.Statement, &record.CreatedAt)
+		err = record.ScanRow(rows)
 		if err != nil {
 			return nil, err
 		}

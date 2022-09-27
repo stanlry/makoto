@@ -41,10 +41,10 @@ Create new migration sql script
 makoto new [script_name]
 ```
 
-Generate golang migration collection, a golang file 'collection.go' will be created under the migration directory
+Generate a golang file 'pack.go' under the migration directory
 
 ```bash
-makoto collect
+makoto pack
 ```
 
 Check current migration status
@@ -53,10 +53,11 @@ Check current migration status
 makoto status
 ```
 
-Migrate to latest version
+Migrate script
 
 ```bash
-makoto up
+makoto migrate up [version]
+makoto migrate down [version]
 ```
 
 Database connection uri format
@@ -91,7 +92,7 @@ First generate the collection file with CLI.
 Perform migration
 
 ```go
-migrator.Up() // migrate to latest version
+migrator.EnsureHead() // migrate to latest version
 // or
 migrator.EnsureSchema(202201011233) // migrate to a given version
 ```
@@ -101,6 +102,6 @@ migrator.EnsureSchema(202201011233) // migrate to a given version
 ```go
 func startMigration(db *sql.DB) {
     migrator := migration.New(db)
-    migrator.EnsureSchema(202201011233)
+    migrator.EnsureHead()
 }
 ```

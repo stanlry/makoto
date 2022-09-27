@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-const collectionFilename = "collection.go"
+const collectionFilename = "pack.go"
 
 func GenerateStringCollection(path string) {
 	fmt.Println("Collect migration scripts:")

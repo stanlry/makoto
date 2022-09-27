@@ -59,9 +59,13 @@ func (m *Migrator) SetEmbedCollection(fs embed.FS) {
 
 func (m *Migrator) EnsureSchema(targetVersion int) {
 	currentNode, err := m.getCurrentNode()
-
 	if err != nil && err != ErrRecordNotFound {
 		log.Fatal(err)
+	}
+
+	targetNode := m.collection.Find(targetVersion)
+	if targetNode == nil {
+		log.Fatal("Target version not exists")
 	}
 
 	if err == ErrRecordNotFound {
@@ -80,6 +84,33 @@ func (m *Migrator) EnsureSchema(targetVersion int) {
 		m.upto(currentNode.nextNode, targetVersion)
 	} else {
 		log.Println("Database schema version is ahead of migration script")
+	}
+}
+
+func (m *Migrator) DropAll() {
+	currentNode, err := m.getCurrentNode()
+	if err != nil && err != ErrRecordNotFound {
+		log.Fatal(err)
+	}
+	m.downTo(currentNode, 0, true)
+}
+
+func (m *Migrator) Down(targetVersion int) {
+	currentNode, err := m.getCurrentNode()
+	if err != nil && err != ErrRecordNotFound {
+		log.Fatal(err)
+	}
+
+	targetNode := m.collection.Find(targetVersion)
+	if targetNode == nil {
+		log.Fatal("Target version not exists")
+	}
+
+	st := currentNode.Statement()
+	if st.Version <= targetVersion {
+		log.Println("Database schema version is behind target version")
+	} else {
+		m.downTo(currentNode, targetVersion, false)
 	}
 }
 
@@ -117,7 +148,23 @@ func (m *Migrator) upto(currentNode *migrationItem, targetVersion int) {
 	tx.Commit()
 }
 
-func (m *Migrator) Up() {
+func (m *Migrator) downTo(currentNode *migrationItem, targetVersion int, dropAll bool) {
+	tx, err := m.db.Begin()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			log.Println("Rollback migration, Error: ", r)
+		}
+	}()
+
+	downTo(tx, currentNode, targetVersion, dropAll)
+	tx.Commit()
+}
+
+func (m *Migrator) EnsureHead() {
 	lastStatement := m.GetCollection().LastStatement()
 	if lastStatement != nil {
 		m.EnsureSchema(lastStatement.Version)
@@ -135,7 +182,7 @@ func upTo(tx *sql.Tx, node *migrationItem, targetVersion int) {
 				log.Fatal(err)
 			}
 			log.Println("Migrate script: ", statement.Filename)
-			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum, statement.UpStatement)
+			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum, ExecUP, statement.UpStatement)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -143,6 +190,31 @@ func upTo(tx *sql.Tx, node *migrationItem, targetVersion int) {
 				break
 			}
 			currentNode = currentNode.nextNode
+		} else {
+			break
+		}
+	}
+}
+
+func downTo(tx *sql.Tx, node *migrationItem, targetVersion int, dropAll bool) {
+	currentNode := node
+	for {
+		statement := currentNode.statement
+		if statement.Version > targetVersion || dropAll {
+			_, err := tx.Exec(statement.DownStatement)
+			if err != nil {
+				log.Println("Fail to run migration script: ", statement.Filename)
+				log.Fatal(err)
+			}
+			log.Println("Migrate script: ", statement.Filename)
+			err = addRecord(tx, statement.Version, statement.Filename, statement.Checksum, ExecDOWN, statement.UpStatement)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if currentNode.nextNode == nil {
+				break
+			}
+			currentNode = currentNode.previousNode
 		} else {
 			break
 		}

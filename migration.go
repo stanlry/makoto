@@ -1,7 +1,14 @@
 package makoto
 
 import (
+	"database/sql"
 	"time"
+)
+
+const (
+	// execution type
+	ExecUP   = "up"
+	ExecDOWN = "down"
 )
 
 type MigrationRecord struct {
@@ -10,7 +17,19 @@ type MigrationRecord struct {
 	Filename  string
 	Checksum  string
 	Statement string
+	Exectype  string
 	CreatedAt time.Time
+}
+
+func (record *MigrationRecord) ScanRow(rows *sql.Rows) error {
+	return rows.Scan(
+		&record.ID,
+		&record.Version,
+		&record.Filename,
+		&record.Checksum,
+		&record.Exectype,
+		&record.Statement,
+		&record.CreatedAt)
 }
 
 type MigrateStatement struct {
