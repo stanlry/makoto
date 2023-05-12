@@ -86,7 +86,7 @@ func main() {
 				&cli.BoolFlag{
 					Name:     "seq",
 					Usage:    "Use incremental sequence instead of datetime to generate file version",
-					Required: true,
+					Required: false,
 				},
 			},
 			Action: func(c *cli.Context) error {

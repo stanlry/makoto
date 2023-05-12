@@ -93,7 +93,7 @@ func currentDir() string {
 
 func createNewScript(name string, useSequence bool) {
 	dir := getSQLScriptDir()
-	version := time.Now().Local().Format("20060201150405")
+	version := time.Now().Local().Format("20060102150405")
 	if useSequence {
 		version = getNewScriptSequence()
 	}
